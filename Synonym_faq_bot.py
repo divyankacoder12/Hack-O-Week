@@ -1,4 +1,3 @@
-
 import re
 
 SYNONYM_GROUPS = {

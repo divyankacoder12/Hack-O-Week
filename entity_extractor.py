@@ -2,7 +2,6 @@
 Entity Extraction for Dates, Course Codes, and Semester Numbers
 Extracts structured entities from natural language academic queries.
 """
-
 import re
 from datetime import datetime
 from dataclasses import dataclass, field

@@ -1,8 +1,4 @@
-# ============================================================
-#  FAQ Retrieval Chatbot using TF-IDF Similarity
-#  Symbiosis Institute of Technology, Nagpur
-#  No external ML libraries needed — pure Python TF-IDF
-# ============================================================
+
 
 import re
 import math

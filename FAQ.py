@@ -1,7 +1,4 @@
-# ============================================================
-#  SIT FAQ Chatbot — Rule-Based (Pattern Matching)
-#  Symbiosis Institute of Technology, Nagpur
-# ============================================================
+
 
 import re
 

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SIT FAQ Chatbot</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --user-bubble: #1e3a5f;
+    --bot-bubble: #1a2236;
+    --glow: 0 0 20px rgba(0,212,255,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glowing orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift {
+    from { transform: translate(0, 0); }
+    to { transform: translate(300px, 200px); }
+  }
+
+  .orb2 {
+    position: fixed;
+    bottom: -150px; right: -150px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift2 10s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift2 {
+    from { transform: translate(0, 0); }
+    to { transform: translate(-200px, -150px); }
+  }
+
+  /* Header */
+  header {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 860px;
+    padding: 28px 24px 0;
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .logo {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 20px;
+    color: #fff;
+    box-shadow: 0 0 24px rgba(0,212,255,0.3);
+    flex-shrink: 0;
+  }
+
+  .header-text h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 22px;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .header-text p {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: #34d399;
+    letter-spacing: 0.5px;
+  }
+
+  .status-dot::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: #34d399;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #34d399;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+
+  /* Quick chips */
+  .chips-bar {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 860px;
+    padding: 16px 24px 0;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+
+  .chip:hover {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,212,255,0.2);
+    transform: translateY(-1px);
+  }
+
+  /* Chat container */
+  .chat-wrap {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 860px;
+    flex: 1;
+    display: flex; flex-direction: column;
+    padding: 16px 24px;
+    overflow: hidden;
+  }
+
+  #chatbox {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-right: 4px;
+    max-height: calc(100vh - 280px);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  #chatbox::-webkit-scrollbar { width: 4px; }
+  #chatbox::-webkit-scrollbar-track { background: transparent; }
+  #chatbox::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Message bubbles */
+  .msg {
+    display: flex;
+    gap: 12px;
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    align-self: flex-end;
+  }
+
+  .avatar.bot {
+    background: linear-gradient(135deg, #0ea5e9, var(--accent2));
+    box-shadow: 0 0 16px rgba(0,212,255,0.25);
+  }
+
+  .avatar.user {
+    background: linear-gradient(135deg, var(--accent3), #f97316);
+    box-shadow: 0 0 16px rgba(245,158,11,0.25);
+  }
+
+  .bubble {
+    max-width: 72%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    position: relative;
+  }
+
+  .bubble.bot {
+    background: var(--bot-bubble);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--text);
+  }
+
+  .bubble.user {
+    background: var(--user-bubble);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-bottom-right-radius: 4px;
+    color: #bfdbfe;
+    text-align: right;
+  }
+
+  .bubble .tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+    opacity: 0.7;
+  }
+
+  /* Typing indicator */
+  .typing-bubble {
+    display: flex; align-items: center; gap: 5px;
+    padding: 14px 18px;
+  }
+
+  .typing-bubble span {
+    width: 7px; height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: typingDot 1.2s ease-in-out infinite;
+    opacity: 0.4;
+  }
+
+  .typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingDot {
+    0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
+    40% { transform: scale(1.3); opacity: 1; }
+  }
+
+  /* Input area */
+  .input-area {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 860px;
+    padding: 0 24px 24px;
+  }
+
+  .input-wrap {
+    display: flex;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 10px 10px 10px 18px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08), var(--glow);
+  }
+
+  #userInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13.5px;
+    letter-spacing: 0.2px;
+  }
+
+  #userInput::placeholder { color: var(--muted); }
+
+  #sendBtn {
+    background: linear-gradient(135deg, var(--accent), #0ea5e9);
+    border: none;
+    border-radius: 10px;
+    width: 40px; height: 40px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  #sendBtn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px rgba(0,212,255,0.4);
+  }
+
+  #sendBtn svg { color: #fff; }
+
+  .input-hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Scrollbar for whole page */
+  html { overflow: hidden; }
+</style>
+</head>
+<body>
+<div class="orb2"></div>
+
+<header>
+  <div class="logo">SIT</div>
+  <div class="header-text">
+    <h1>SIT Help Desk</h1>
+    <p>Symbiosis Institute of Technology · FAQ Assistant</p>
+  </div>
+  <div class="status-dot">ONLINE</div>
+</header>
+
+<div class="chips-bar" id="chipsBar">
+  <button class="chip" onclick="quickAsk('courses')">📚 Courses</button>
+  <button class="chip" onclick="quickAsk('fees')">💰 Fees</button>
+  <button class="chip" onclick="quickAsk('admission')">🎓 Admission</button>
+  <button class="chip" onclick="quickAsk('timing')">🕘 Timing</button>
+  <button class="chip" onclick="quickAsk('location')">📍 Location</button>
+  <button class="chip" onclick="quickAsk('contact')">📞 Contact</button>
+  <button class="chip" onclick="quickAsk('hostel')">🏠 Hostel</button>
+  <button class="chip" onclick="quickAsk('library')">📖 Library</button>
+  <button class="chip" onclick="quickAsk('principal')">🏛️ Management</button>
+</div>
+
+<div class="chat-wrap">
+  <div id="chatbox"></div>
+</div>
+
+<div class="input-area">
+  <div class="input-wrap">
+    <input type="text" id="userInput" placeholder="Ask about courses, fees, admission..." autocomplete="off"/>
+    <button id="sendBtn" onclick="sendMessage()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+  <p class="input-hint">Press Enter or click send · Ask anything about SIT Nagpur</p>
+</div>
+
+<script>
+// ─── Python-style rule-based FAQ engine (ported to JS) ───────────────────────
+
+const FAQ_RULES = [
+  {
+    patterns: ["course", "program", "branch", "btech", "engineering", "cs", "cse", "computer science", "stream", "degree"],
+    topic: "COURSES",
+    response: "Symbiosis Institute of Technology offers BTech programs in Computer Science, Electronics & Telecommunication, Mechanical Engineering, and other specialisations under Symbiosis International University."
+  },
+  {
+    patterns: ["fee", "fees", "cost", "price", "tuition", "payment", "scholarship", "amount", "charges"],
+    topic: "FEES",
+    response: "The fee structure varies by course and category. Please visit the official Symbiosis website at symbiosis.ac.in for the most accurate and up-to-date fee details."
+  },
+  {
+    patterns: ["admission", "apply", "application", "entrance", "exam", "merit", "eligibility", "criteria", "selection", "seat", "enroll", "join"],
+    topic: "ADMISSION",
+    response: "Admissions are based on entrance exams and merit as per Symbiosis guidelines. Candidates typically need to qualify SET (Symbiosis Entrance Test) along with a personal interaction round."
+  },
+  {
+    patterns: ["timing", "time", "hours", "schedule", "open", "class", "lecture", "when", "office hours"],
+    topic: "COLLEGE TIMING",
+    response: "College timing is from 9:00 AM to 5:00 PM, Monday to Friday. Administrative offices generally follow the same schedule."
+  },
+  {
+    patterns: ["location", "address", "where", "place", "city", "nagpur", "situated", "campus", "map", "route", "distance"],
+    topic: "LOCATION",
+    response: "Symbiosis Institute of Technology is located in Nagpur, Maharashtra. The campus is well-connected by road and public transport."
+  },
+  {
+    patterns: ["contact", "phone", "email", "call", "reach", "helpline", "number", "enquiry", "inquiry"],
+    topic: "CONTACT",
+    response: "You can contact the college office through the official Symbiosis website (symbiosis.ac.in) or visit the campus admissions desk during working hours."
+  },
+  {
+    patterns: ["hostel", "accommodation", "stay", "dorm", "dormitory", "residential", "room", "pg", "living"],
+    topic: "HOSTEL",
+    response: "Yes, hostel facilities are available for students. Separate hostels are provided for male and female students with basic amenities, Wi-Fi, and mess facilities."
+  },
+  {
+    patterns: ["library", "book", "books", "reading", "study", "resource", "reference", "journal", "digital library"],
+    topic: "LIBRARY",
+    response: "The library is open from 9:00 AM to 6:00 PM on working days. It houses a wide collection of technical books, journals, research papers, and digital resources."
+  },
+  {
+    patterns: ["principal", "director", "head", "management", "authority", "vice chancellor", "chancellor", "dean", "administration", "university"],
+    topic: "MANAGEMENT",
+    response: "The institute is managed under Symbiosis International University (SIU), a deemed-to-be university recognised by UGC and accredited with NAAC."
+  },
+  {
+    patterns: ["placement", "job", "recruit", "company", "hiring", "campus", "salary", "package", "career"],
+    topic: "PLACEMENTS",
+    response: "SIT has an active Training & Placement Cell that facilitates campus recruitment drives. Several reputed companies visit for placements each year. For statistics, check the official website."
+  },
+  {
+    patterns: ["sports", "gym", "ground", "football", "cricket", "basketball", "game", "activity", "club", "extracurricular"],
+    topic: "SPORTS & ACTIVITIES",
+    response: "The campus offers sports facilities including grounds for cricket, football, and other activities. Various student clubs and cultural events are organised throughout the year."
+  },
+  {
+    patterns: ["canteen", "food", "mess", "cafeteria", "eat", "lunch", "tiffin", "restaurant"],
+    topic: "CANTEEN",
+    response: "The campus has a canteen and mess facility providing meals throughout the day at reasonable rates."
+  },
+  {
+    patterns: ["transport", "bus", "commute", "pickup", "drop", "vehicle", "travel"],
+    topic: "TRANSPORT",
+    response: "The college does not operate its own fleet, but Nagpur city buses and auto-rickshaws provide connectivity. For hostel students, transport to key city areas may be coordinated."
+  },
+  {
+    patterns: ["wifi", "internet", "network", "connectivity", "broadband", "lan"],
+    topic: "INTERNET",
+    response: "High-speed Wi-Fi internet is available across the campus, including classrooms, labs, the library, and hostel buildings."
+  },
+  {
+    patterns: ["lab", "laboratory", "computer lab", "research", "equipment", "infrastructure", "facility"],
+    topic: "LABS & INFRASTRUCTURE",
+    response: "SIT has well-equipped computer labs, electronics labs, and research facilities. The infrastructure supports modern engineering education with up-to-date equipment."
+  }
+];
+
+// Rule-based matching function — mirrors Python if-elif-else logic
+function getRuleBasedResponse(userInput) {
+  const lower = userInput.toLowerCase();
+
+  // Greeting patterns
+  if (/\b(hi|hello|hey|greet|good morning|good evening|good afternoon|namaste)\b/.test(lower)) {
+    return {
+      topic: "GREETING",
+      response: "Hello! 👋 Welcome to the SIT Help Desk. I can answer your questions about courses, fees, admissions, timing, hostel, library, and more. How can I assist you today?"
+    };
+  }
+
+  // Thank you patterns
+  if (/\b(thank|thanks|thankyou|thank you|thx|ty|appreciate)\b/.test(lower)) {
+    return {
+      topic: "THANKS",
+      response: "You're welcome! Feel free to ask if you have more questions about Symbiosis Institute of Technology. 😊"
+    };
+  }
+
+  // Bye patterns
+  if (/\b(bye|goodbye|see you|cya|exit|quit|take care)\b/.test(lower)) {
+    return {
+      topic: "GOODBYE",
+      response: "Goodbye! Best of luck with your academic journey at SIT. Don't hesitate to return if you have more questions! 🎓"
+    };
+  }
+
+  // Match FAQ rules (pattern-based)
+  for (const rule of FAQ_RULES) {
+    for (const keyword of rule.patterns) {
+      if (lower.includes(keyword)) {
+        return { topic: rule.topic, response: rule.response };
+      }
+    }
+  }
+
+  // Default fallback
+  return {
+    topic: "UNKNOWN",
+    response: "I'm not sure about that yet. You can ask me about: courses, fees, admission, timing, location, contact, hostel, library, placements, labs, Wi-Fi, sports, canteen, or transport. Or visit symbiosis.ac.in for full details."
+  };
+}
+
+// ─── UI Logic ─────────────────────────────────────────────────────────────────
+
+const chatbox = document.getElementById('chatbox');
+const input = document.getElementById('userInput');
+
+function appendMessage(role, text, topic = null) {
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar ${role}`;
+  avatar.textContent = role === 'bot' ? '🤖' : '👤';
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+
+  if (topic && role === 'bot') {
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    tag.textContent = `// ${topic}`;
+    bubble.appendChild(tag);
+  }
+
+  const textNode = document.createElement('div');
+  textNode.textContent = text;
+  bubble.appendChild(textNode);
+
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  chatbox.appendChild(msg);
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function showTyping() {
+  const msg = document.createElement('div');
+  msg.className = 'msg bot';
+  msg.id = 'typingIndicator';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar bot';
+  avatar.textContent = '🤖';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble bot typing-bubble';
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  chatbox.appendChild(msg);
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  appendMessage('user', text);
+  input.value = '';
+
+  showTyping();
+
+  // Simulate processing delay (like a real bot)
+  setTimeout(() => {
+    removeTyping();
+    const { topic, response } = getRuleBasedResponse(text);
+    appendMessage('bot', response, topic);
+  }, 600 + Math.random() * 400);
+}
+
+function quickAsk(topic) {
+  const questionMap = {
+    courses: "What courses are offered at SIT?",
+    fees: "What is the fee structure?",
+    admission: "How does the admission process work?",
+    timing: "What are the college timings?",
+    location: "Where is SIT located?",
+    contact: "How can I contact the college?",
+    hostel: "Is hostel facility available?",
+    library: "What are the library timings?",
+    principal: "Who manages the institute?"
+  };
+  input.value = questionMap[topic] || topic;
+  sendMessage();
+}
+
+// Enter key support
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendMessage();
+});
+
+// Welcome message on load
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    appendMessage('bot',
+      "Welcome to the SIT Help Desk! 🎓 I'm your rule-based FAQ assistant for Symbiosis Institute of Technology, Nagpur. Ask me anything about courses, fees, admission, hostel, library, and more — or click a quick topic above!",
+      "WELCOME"
+    );
+  }, 400);
+});
+</script>
+</body>
+</html>

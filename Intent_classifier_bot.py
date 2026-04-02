@@ -1,15 +1,4 @@
-# ============================================================
-#  Intent Classification for Student Queries
-#  Symbiosis Institute of Technology, Nagpur
-#
-#  7 Intents:
-#    1. admissions     2. exams        3. timetable
-#    4. hostel         5. scholarships 6. fees
-#    7. placements
-#
-#  Classifier: Multinomial Naive Bayes (built from scratch)
-#  No sklearn / NLTK required — pure Python only
-# ============================================================
+
 
 import re
 import math
